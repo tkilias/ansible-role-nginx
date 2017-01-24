@@ -12,14 +12,26 @@
 - include: setup-RedHat.yml
   when: ansible_os_family == 'RedHat'
 
+- name: Remove default nginx config
+  file:
+    path: "{{ nginx_conf_path }}"
+    state: absent
+
+- name: get file names to copy
+  command: "ls {{ local_nginx_conf_path }}"
+  register: files_to_copy
+  delegate_to: localhost
+
 # Nginx setup.
 - name: Copy nginx configuration in place.
   copy:
-    src: "{{ local_nginx_conf_path }}"
+    src: "{{ local_nginx_conf_path }}/{{ item }}"
     dest: "{{ nginx_conf_path }}"
     owner: root
     group: "{{ root_group }}"
     mode: 0755
+  with_items: 
+    - "{{ files_to_copy.stdout_lines }}"
   notify:
     - reload nginx
 
